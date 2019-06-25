@@ -21,7 +21,8 @@ node {
 
 
         }
-    } catch(e) {
+    }
+    catch(e) {
         // mark build as failed
         currentBuild.result = "FAILURE";
         // send slack notification
