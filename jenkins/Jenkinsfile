@@ -1,4 +1,7 @@
 node {
     def myGradleContainer = docker.image('gradle:jdk8-alpine')
     myGradleContainer.pull()
+    def mymavenContainer = docker.image('maven:3-alpine')
+    mymavenContainer.pull()
+
 }
