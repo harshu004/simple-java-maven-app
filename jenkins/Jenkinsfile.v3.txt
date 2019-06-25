@@ -1,0 +1,39 @@
+node {
+    def myGradleContainer = docker.image('gradle:jdk8-alpine')
+    myGradleContainer.pull()
+    def mymavenContainer = docker.image('maven:3-alpine')
+    mymavenContainer.pull()
+
+    stage('prep') {
+        git url: 'https://github.com/harshu004/gs-gradle.git'
+    }
+    stage('build') {
+        myGradleContainer.inside("-v ${env.HOME}/.gradle:/home/gradle/.gradle") {
+            sh 'cd complete && /opt/gradle/bin/gradle build'
+        }
+    }
+    try {
+        stage('sonar-scanner') {
+        def sonarqubeScannerHome = tool name: 'sonar', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+        withCredentials([string(credentialsId: 'sonar', variable: 'sonarLogin')]) {
+            sh "${sonarqubeScannerHome}/bin/sonar-scanner -e -Dsonar.host.url=http://sonarqube:9000 -Dsonar.login=${sonarLogin} -Dsonar.projectName=gs-gradle -Dsonar.projectVersion=${env.BUILD_NUMBER} -Dsonar.projectKey=GS -Dsonar.sources=complete/src/main/ -Dsonar.tests=complete/src/test/ -Dsonar.language=java"
+            }
+        }
+        catch(e) {
+            // mark build as failed
+            currentBuild.result = "FAILURE";
+            // send slack notification
+            slackSend (color: '#FF0000', message: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
+            // throw the error
+            throw e;
+        
+        }
+
+    
+    }
+
+
+    
+
+
+}
